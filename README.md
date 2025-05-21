@@ -1,51 +1,49 @@
 # DDD
-# 🚗 CAR VS DANJAS
+# 🚗 Car vs Blondes
 
-A fun, fast-paced arcade-style game where you dodge waves of chaotic "Danjas" (blondes) coming at you while driving your little car through an increasingly difficult road. The longer you survive, the faster and crazier it gets!
+A fun and chaotic arcade-style driving game where you dodge waves of falling blonde "Danjas" while driving your little eggplant-colored car! The longer you last, the harder the game becomes!
 
 ---
 
 ## 🎮 Gameplay Overview
 
-- 🛣️ You're driving a small eggplant-colored car.
-- 🏃‍♀️ Avoid the falling blonde enemies ("Danjas") coming down the road.
-- ⏱️ The game gets harder every 30 seconds with more blondes, less free lanes, and faster speeds.
-- 💀 One hit and it’s game over!
+- 🛣️ Drive your car on a multi-lane road and avoid the descending blonde enemies.
+- 💡 Toggle headlights with the `H` key for a cool visual effect.
+- 🔥 Survive longer to reach higher **phases**, faster speeds, and more intense action.
+- 💥 Colliding with any blonde ends the game!
 
 ---
 
-## 🧠 How to Play
+## 🕹️ Controls
 
-| Action        | Control      |
-|---------------|--------------|
-| Move Left     | `A` key      |
-| Move Right    | `D` key      |
-| Move Up       | `↑` arrow    |
-| Move Down     | `↓` arrow    |
-| Start Game    | Click `START` on the menu |
-| Exit Game     | Click `EXIT` |
-
----
-
-## ✨ Features
-
-- Dynamic difficulty with progressing **phases**
-- Real-time **score counter**
-- Funny and intense **game over screen**
-- Clean, retro-inspired graphics drawn with `pygame` and `gfxdraw`
-- Intuitive menu system with clickable buttons
+| Key | Action            |
+|-----|-------------------|
+| A   | Move Left         |
+| D   | Move Right        |
+| W   | Move Up           |
+| S   | Move Down         |
+| H   | Toggle Headlights |
+| ESC | Quit (via close button) |
 
 ---
 
-## 🖥️ Installation
+## 🧠 Features
 
-### 1. Requirements
-- Python 3.7+
-- Pygame
+- Procedural difficulty: speed and enemy count increase with each phase
+- Headlight beams & animated turn signals
+- Pixel-art inspired visuals using `pygame.gfxdraw`
+- Dynamic lane and collision management
+- Score tracker and elapsed time display
+- Simple menu system with `Start`, `Exit`, and `Game Over` screen
 
-### 2. Install Pygame
-Open your terminal or command prompt and run:
+---
 
+## 📦 Installation
+
+### Requirements
+- Python 3.7 or higher
+- `pygame` library
+
+### Install pygame
 ```bash
 pip install pygame
-
