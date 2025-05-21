@@ -2,15 +2,15 @@ import pygame
 import random
 import sys
 
-# Инициализация Pygame
+# Pygame Inizialization
 pygame.init()
 
-# Настройки экрана
+# Screen setup
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("CAR VS DANJAS")
 
-# Цвета
+# Colours
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLONDE_YELLOW = (255, 255, 153)  # Светло-жёлтый (блондинка)
@@ -21,12 +21,12 @@ SKY_BLUE = (25, 25, 112)         # Тёмно-синий (небо)
 ROAD_GRAY = (50, 50, 50)         # Серый (дорога)
 BUTTON_COLOR = (100, 100, 255)   # Цвет кнопок
 
-# Шрифты
+# Shrifts
 font_large = pygame.font.SysFont('Arial', 50)
 font_medium = pygame.font.SysFont('Arial', 36)
 font_small = pygame.font.SysFont('Arial', 24)
 
-# Машина (игрок)
+# PLayer
 class Car(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -43,7 +43,7 @@ class Car(pygame.sprite.Sprite):
         if keys[pygame.K_d] and self.rect.right < WIDTH - 100:
             self.rect.x += self.speed
 
-# Блондинка (враг)
+# Danaja
 class Blonde(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -67,7 +67,7 @@ class Blonde(pygame.sprite.Sprite):
             self.rect.y = random.randint(-200, -100)
             self.speed = random.randint(2, 5)
 
-# Кнопка
+# Button
 class Button:
     def __init__(self, x, y, width, height, text, action=None):
         self.rect = pygame.Rect(x, y, width, height)
@@ -93,7 +93,7 @@ class Button:
             if self.action:
                 self.action()
 
-# Функция для рисования дороги
+# Functions for road
 def draw_road():
     pygame.draw.rect(screen, SKY_BLUE, (0, 0, WIDTH, HEIGHT // 3))
     pygame.draw.rect(screen, GREEN, (0, HEIGHT // 3, 100, HEIGHT))
@@ -102,7 +102,7 @@ def draw_road():
     for y in range(HEIGHT // 3, HEIGHT, 40):
         pygame.draw.rect(screen, YELLOW, (WIDTH // 2 - 5, y, 10, 20))
 
-# Основная игра
+# Main game
 def main_game():
     all_sprites = pygame.sprite.Group()
     blondes = pygame.sprite.Group()
@@ -141,7 +141,7 @@ def main_game():
         pygame.display.flip()
         clock.tick(60)
 
-# Экран меню
+# Menu screen
 def show_menu():
     start_button = Button(WIDTH//2 - 100, HEIGHT//2 - 30, 200, 60, "Начать", lambda: None)
     exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 50, 200, 60, "Выход", lambda: None)
@@ -178,7 +178,7 @@ def show_menu():
 
         pygame.display.flip()
 
-# Экран завершения игры
+# Ending game screen
 def show_game_over(score):
     restart_button = Button(WIDTH//2 - 100, HEIGHT//2, 200, 60, "Играть снова", lambda: None)
     exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 80, 200, 60, "Выход", lambda: None)
@@ -203,15 +203,15 @@ def show_game_over(score):
 
         screen.fill(SKY_BLUE)
         
-        # Текст "Игра окончена"
+        # Text "Game over"
         game_over = font_large.render("U SUCK!", True, WHITE)
         screen.blit(game_over, (WIDTH//2 - game_over.get_width()//2, 100))
         
-        # Счет
+        # Score
         score_text = font_medium.render(f"YOUR SCORE: {score}", True, WHITE)
         screen.blit(score_text, (WIDTH//2 - score_text.get_width()//2, 180))
         
-        # Кнопки
+        # Buttons
         restart_button.check_hover(mouse_pos)
         exit_button.check_hover(mouse_pos)
         restart_button.draw(screen)
@@ -219,7 +219,7 @@ def show_game_over(score):
 
         pygame.display.flip()
 
-# Главный цикл программы
+# Main program cycle
 def main():
     while True:
         score = show_menu()  # Показываем меню
