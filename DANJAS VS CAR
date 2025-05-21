@@ -115,9 +115,9 @@ class Car(pygame.sprite.Sprite):
             self.rect.x += self.settings.car_speed
             self.direction = 1
             
-        if keys[pygame.K_UP] and self.rect.top > HEIGHT // 3:
+        if keys[pygame.K_w] and self.rect.top > HEIGHT // 3:
             self.rect.y -= self.settings.car_speed
-        if keys[pygame.K_DOWN] and self.rect.bottom < HEIGHT:
+        if keys[pygame.K_s] and self.rect.bottom < HEIGHT:
             self.rect.y += self.settings.car_speed
             
         self.update_direction()
