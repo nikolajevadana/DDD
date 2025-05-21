@@ -1,6 +1,7 @@
 import pygame
 import random
 import sys
+from pygame import gfxdraw
 
 # Инициализация Pygame
 pygame.init()
@@ -10,7 +11,7 @@ WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("CAR VS DANJAS")
 
-# Цвета и шрифты
+# Цвета
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLONDE_YELLOW = (255, 255, 153)
@@ -20,7 +21,11 @@ YELLOW = (255, 255, 0)
 SKY_BLUE = (25, 25, 112)
 ROAD_GRAY = (50, 50, 50)
 BUTTON_COLOR = (100, 100, 255)
+RED = (255, 0, 0)
+ORANGE = (255, 165, 0)
+DARK_EGGPLANT = (50, 0, 90)
 
+# Шрифты
 font_large = pygame.font.SysFont('Arial', 50)
 font_medium = pygame.font.SysFont('Arial', 36)
 font_small = pygame.font.SysFont('Arial', 24)
@@ -29,13 +34,22 @@ font_small = pygame.font.SysFont('Arial', 24)
 class GameSettings:
     def __init__(self):
         self.phase = 1
-        self.phase_length = 2000
+        self.phase_time = 30000  # 30 секунд в миллисекундах
+        self.last_phase_change = pygame.time.get_ticks()
         self.car_speed = 7
         self.blonde_speed_min = 2
         self.blonde_speed_max = 5
         self.blonde_count = 8
-        self.min_free_lanes = 3  # Минимальное количество свободных рядов
-        self.lane_width = 100    # Ширина одного ряда
+        self.min_free_lanes = 3
+        self.lane_width = 100
+        
+    def check_phase_change(self):
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_phase_change > self.phase_time:
+            self.next_phase()
+            self.last_phase_change = current_time
+            return True
+        return False
         
     def next_phase(self):
         self.phase += 1
@@ -43,24 +57,70 @@ class GameSettings:
         self.blonde_speed_min *= 1.05
         self.blonde_speed_max *= 1.05
         self.blonde_count = min(20, int(self.blonde_count * 1.05))
-        self.min_free_lanes = max(1, self.min_free_lanes - 0.2)  # Уменьшаем свободные ряды
+        self.min_free_lanes = max(1, self.min_free_lanes - 0.2)
 
 # Машина (игрок)
 class Car(pygame.sprite.Sprite):
     def __init__(self, settings):
         super().__init__()
         self.settings = settings
-        self.image = pygame.Surface((60, 100))
-        self.image.fill(EGGPLANT)
+        self.size = 40
+        self.image = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+        self.base_image = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+        self.draw_car()
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH // 2, HEIGHT - 100)
+        self.direction = 0
+        self.last_direction_change = 0
+        
+    def draw_car(self):
+        self.base_image.fill(EGGPLANT)
+        pygame.draw.rect(self.base_image, RED, (5, self.size-8, 10, 5))
+        pygame.draw.rect(self.base_image, RED, (self.size-15, self.size-8, 10, 5))
+        self.image.blit(self.base_image, (0, 0))
+        
+    def update_direction(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_direction_change > 300:
+            self.draw_car()
+            if self.direction != 0:
+                if self.direction == -1:
+                    for i in range(5):
+                        gfxdraw.pixel(self.image, 3, 10+i, ORANGE)
+                        gfxdraw.pixel(self.image, 4, 10+i, ORANGE)
+                else:
+                    for i in range(5):
+                        gfxdraw.pixel(self.image, self.size-4, 10+i, ORANGE)
+                        gfxdraw.pixel(self.image, self.size-5, 10+i, ORANGE)
+                
+                shadow_offset = 3
+                shadow_surface = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+                if self.direction == -1:
+                    shadow_surface.blit(self.base_image, (shadow_offset, 0))
+                else:
+                    shadow_surface.blit(self.base_image, (-shadow_offset, 0))
+                shadow_surface.fill((0, 0, 0, 50), special_flags=pygame.BLEND_RGBA_MULT)
+                self.image.blit(shadow_surface, (0, 0))
+            
+            self.last_direction_change = now
         
     def update(self):
         keys = pygame.key.get_pressed()
+        self.direction = 0
+        
         if keys[pygame.K_a] and self.rect.left > 100:
             self.rect.x -= self.settings.car_speed
+            self.direction = -1
         if keys[pygame.K_d] and self.rect.right < WIDTH - 100:
             self.rect.x += self.settings.car_speed
+            self.direction = 1
+            
+        if keys[pygame.K_UP] and self.rect.top > HEIGHT // 3:
+            self.rect.y -= self.settings.car_speed
+        if keys[pygame.K_DOWN] and self.rect.bottom < HEIGHT:
+            self.rect.y += self.settings.car_speed
+            
+        self.update_direction()
 
 # Блондинка (враг)
 class Blonde(pygame.sprite.Sprite):
@@ -75,18 +135,15 @@ class Blonde(pygame.sprite.Sprite):
         for x, y in [(15, 35), (20, 38), (25, 39), (30, 38), (35, 35)]:
             pygame.draw.rect(self.image, BLACK, (x, y, 3, 3))
         
-        # Выбираем ряд для спавна, учитывая занятые ряды
         all_lanes = range(100, WIDTH - 150, self.settings.lane_width)
         free_lanes = [lane for lane in all_lanes if lane not in occupied_lanes]
         
-        # Если свободных рядов меньше минимального, освобождаем нужное количество
         while len(free_lanes) < self.settings.min_free_lanes:
             if occupied_lanes:
                 occupied_lanes.pop()
             free_lanes = [lane for lane in all_lanes if lane not in occupied_lanes]
         
-        # Выбираем случайный занятый ряд (но не все)
-        if occupied_lanes and random.random() < 0.7:  # 70% chance to spawn in occupied lane
+        if occupied_lanes and random.random() < 0.7:
             self.rect = self.image.get_rect(centerx=random.choice(occupied_lanes))
         else:
             self.rect = self.image.get_rect(centerx=random.choice(free_lanes))
@@ -139,55 +196,52 @@ def main_game():
     score = 0
     clock = pygame.time.Clock()
     running = True
+    start_time = pygame.time.get_ticks()
 
     while running:
-        # Обработка событий
+        current_time = pygame.time.get_ticks()
+        elapsed_time = (current_time - start_time) // 1000
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-        # Проверка перехода на новую фазу
-        if score // settings.phase_length > settings.phase - 1:
-            settings.next_phase()
+        if settings.check_phase_change():
+            print(f"NEW PHASE {settings.phase}")
         
-        # Спавн новых блондинок с учетом занятых рядов
         if len(blondes) < settings.blonde_count:
-            # Получаем текущие занятые ряды
             occupied_lanes = [blonde.rect.centerx for blonde in blondes]
-            
-            # Создаем новую блондинку с учетом занятых рядов
             new_blonde = Blonde(settings, occupied_lanes)
             all_sprites.add(new_blonde)
             blondes.add(new_blonde)
 
-        # Обновление
         all_sprites.update()
 
-        # Проверка столкновений
         if pygame.sprite.spritecollide(car, blondes, False):
             return score
 
         score += 1
 
-        # Отрисовка
         screen.fill(BLACK)
         draw_road(settings)
         all_sprites.draw(screen)
         
-        # Интерфейс
         score_text = font_medium.render(f"SCORE: {score}", True, WHITE)
         screen.blit(score_text, (10, 10))
         
-        phase_text = font_small.render(f"PHASE: {settings.phase} (FREE ROWS: {int(settings.min_free_lanes)})", True, WHITE)
-        screen.blit(phase_text, (10, 50))
+        time_text = font_small.render(f"TIME: {elapsed_time} сек", True, WHITE)
+        screen.blit(time_text, (10, 50))
+        
+        phase_text = font_small.render(f"PHASE: {settings.phase}", True, WHITE)
+        screen.blit(phase_text, (10, 80))
 
         pygame.display.flip()
         clock.tick(60)
 
 # Меню
 def show_menu():
-    start_button = Button(WIDTH//2 - 100, HEIGHT//2 - 30, 200, 60, "STAR")
+    start_button = Button(WIDTH//2 - 100, HEIGHT//2 - 30, 200, 60, "START")
     exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 50, 200, 60, "EXIT")
 
     while True:
@@ -207,7 +261,7 @@ def show_menu():
 
         screen.fill(SKY_BLUE)
         
-        title = font_large.render("CAR VS BLONDES", True, WHITE)
+        title = font_large.render("CAR VS DANJA", True, WHITE)
         screen.blit(title, (WIDTH//2 - title.get_width()//2, 100))
         
         start_button.check_hover(mouse_pos)
@@ -239,10 +293,10 @@ def show_game_over(score):
 
         screen.fill(SKY_BLUE)
         
-        game_over = font_large.render("U SUCK", True, WHITE)
+        game_over = font_large.render("U SUCK!", True, WHITE)
         screen.blit(game_over, (WIDTH//2 - game_over.get_width()//2, 100))
         
-        score_text = font_medium.render(f"YOUR SCORE: {score}", True, WHITE)
+        score_text = font_medium.render(f"SCORE: {score}", True, WHITE)
         screen.blit(score_text, (WIDTH//2 - score_text.get_width()//2, 180))
         
         restart_button.check_hover(mouse_pos)
