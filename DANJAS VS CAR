@@ -3,15 +3,15 @@ import random
 import sys
 from pygame import gfxdraw
 
-# Инициализация Pygame
+# Pygame
 pygame.init()
 
-# Настройки экрана
+# Screen setting
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("CAR VS DANJAS")
 
-# Цвета
+# Colours
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLONDE_YELLOW = (255, 255, 153)
@@ -25,16 +25,16 @@ RED = (255, 0, 0)
 ORANGE = (255, 165, 0)
 DARK_EGGPLANT = (50, 0, 90)
 
-# Шрифты
+# Fonts
 font_large = pygame.font.SysFont('Arial', 50)
 font_medium = pygame.font.SysFont('Arial', 36)
 font_small = pygame.font.SysFont('Arial', 24)
 
-# Параметры игры
+# Game settings
 class GameSettings:
     def __init__(self):
         self.phase = 1
-        self.phase_time = 30000  # 30 секунд в миллисекундах
+        self.phase_time = 30000  # 30 sec in millisec
         self.last_phase_change = pygame.time.get_ticks()
         self.car_speed = 7
         self.blonde_speed_min = 2
@@ -59,7 +59,7 @@ class GameSettings:
         self.blonde_count = min(20, int(self.blonde_count * 1.05))
         self.min_free_lanes = max(1, self.min_free_lanes - 0.2)
 
-# Машина (игрок)
+# Car
 class Car(pygame.sprite.Sprite):
     def __init__(self, settings):
         super().__init__()
@@ -122,7 +122,7 @@ class Car(pygame.sprite.Sprite):
             
         self.update_direction()
 
-# Блондинка (враг)
+# Blonde
 class Blonde(pygame.sprite.Sprite):
     def __init__(self, settings, occupied_lanes):
         super().__init__()
@@ -156,7 +156,7 @@ class Blonde(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT:
             self.kill()
 
-# Кнопка
+# Button
 class Button:
     def __init__(self, x, y, width, height, text):
         self.rect = pygame.Rect(x, y, width, height)
@@ -176,7 +176,7 @@ class Button:
         self.is_hovered = self.rect.collidepoint(pos)
         return self.is_hovered
 
-# Функция для рисования дороги
+# Road functions
 def draw_road(settings):
     pygame.draw.rect(screen, SKY_BLUE, (0, 0, WIDTH, HEIGHT // 3))
     pygame.draw.rect(screen, GREEN, (0, HEIGHT // 3, 100, HEIGHT))
@@ -185,7 +185,7 @@ def draw_road(settings):
     for y in range(HEIGHT // 3, HEIGHT, 40):
         pygame.draw.rect(screen, YELLOW, (WIDTH // 2 - 5, y, 10, 20))
 
-# Основная игра
+# Main game
 def main_game():
     settings = GameSettings()
     all_sprites = pygame.sprite.Group()
@@ -239,7 +239,7 @@ def main_game():
         pygame.display.flip()
         clock.tick(60)
 
-# Меню
+# Menu
 def show_menu():
     start_button = Button(WIDTH//2 - 100, HEIGHT//2 - 30, 200, 60, "START")
     exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 50, 200, 60, "EXIT")
@@ -271,7 +271,7 @@ def show_menu():
 
         pygame.display.flip()
 
-# Экран завершения игры
+# Game end screen
 def show_game_over(score):
     restart_button = Button(WIDTH//2 - 100, HEIGHT//2, 200, 60, "PLAY AGAIN")
     exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 80, 200, 60, "EXIT")
@@ -306,7 +306,7 @@ def show_game_over(score):
 
         pygame.display.flip()
 
-# Главный цикл программы
+# Main game cycle
 def main():
     while True:
         score = show_menu()
