@@ -13,13 +13,13 @@ pygame.display.set_caption("CAR VS DANJAS")
 # Цвета
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-BLONDE_YELLOW = (255, 255, 153)  # Светло-жёлтый (блондинка)
-EGGPLANT = (75, 0, 130)          # Баклажан (машина)
-GREEN = (34, 139, 34)            # Зелёный (обочина)
-YELLOW = (255, 255, 0)           # Жёлтый (разметка)
-SKY_BLUE = (25, 25, 112)         # Тёмно-синий (небо)
-ROAD_GRAY = (50, 50, 50)         # Серый (дорога)
-BUTTON_COLOR = (100, 100, 255)   # Цвет кнопок
+BLONDE_YELLOW = (255, 255, 153)  # Blond
+EGGPLANT = (75, 0, 130)          # Eggplant
+GREEN = (34, 139, 34)            # Green
+YELLOW = (255, 255, 0)           # Yellow
+SKY_BLUE = (25, 25, 112)         # Dark blue
+ROAD_GRAY = (50, 50, 50)         # Gray
+BUTTON_COLOR = (100, 100, 255)   # Button colour
 
 # Шрифты
 font_large = pygame.font.SysFont('Arial', 50)
