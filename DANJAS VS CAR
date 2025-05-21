@@ -3,15 +3,15 @@ import random
 import sys
 from pygame import gfxdraw
 
-# Pygame
+# Initialize Pygame
 pygame.init()
 
-# Screen setting
+# Screen settings
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("CAR VS DANJAS")
+pygame.display.set_caption("Car vs Blondes")
 
-# Colours
+# Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLONDE_YELLOW = (255, 255, 153)
@@ -24,6 +24,7 @@ BUTTON_COLOR = (100, 100, 255)
 RED = (255, 0, 0)
 ORANGE = (255, 165, 0)
 DARK_EGGPLANT = (50, 0, 90)
+HEADLIGHT_BEAM = (255, 255, 200, 50)  # Semi-transparent light yellow
 
 # Fonts
 font_large = pygame.font.SysFont('Arial', 50)
@@ -34,7 +35,7 @@ font_small = pygame.font.SysFont('Arial', 24)
 class GameSettings:
     def __init__(self):
         self.phase = 1
-        self.phase_time = 30000  # 30 sec in millisec
+        self.phase_time = 30000  # 30 seconds in milliseconds
         self.last_phase_change = pygame.time.get_ticks()
         self.car_speed = 7
         self.blonde_speed_min = 2
@@ -59,7 +60,7 @@ class GameSettings:
         self.blonde_count = min(20, int(self.blonde_count * 1.05))
         self.min_free_lanes = max(1, self.min_free_lanes - 0.2)
 
-# Car
+# Player's car
 class Car(pygame.sprite.Sprite):
     def __init__(self, settings):
         super().__init__()
@@ -70,34 +71,69 @@ class Car(pygame.sprite.Sprite):
         self.draw_car()
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH // 2, HEIGHT - 100)
-        self.direction = 0
+        self.direction = 0  # 0 - stationary, -1 - left, 1 - right
         self.last_direction_change = 0
+        self.headlights_on = True
         
     def draw_car(self):
+        # Car body
         self.base_image.fill(EGGPLANT)
+        
+        # Red tail lights
         pygame.draw.rect(self.base_image, RED, (5, self.size-8, 10, 5))
         pygame.draw.rect(self.base_image, RED, (self.size-15, self.size-8, 10, 5))
+        
+        # White headlights (front)
+        pygame.draw.rect(self.base_image, WHITE, (5, 2, 10, 5))
+        pygame.draw.rect(self.base_image, WHITE, (self.size-15, 2, 10, 5))
+        
         self.image.blit(self.base_image, (0, 0))
+        
+    def draw_headlight_beams(self):
+        if self.headlights_on:
+            # Create a surface for light beams
+            beam_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            
+            # Left headlight beam
+            left_beam_points = [
+                (self.rect.left + 10, self.rect.top + 5),
+                (self.rect.left - 100, self.rect.top - 200),
+                (self.rect.left + 50, self.rect.top - 200)
+            ]
+            
+            # Right headlight beam
+            right_beam_points = [
+                (self.rect.right - 10, self.rect.top + 5),
+                (self.rect.right + 100, self.rect.top - 200),
+                (self.rect.right - 50, self.rect.top - 200)
+            ]
+            
+            pygame.draw.polygon(beam_surface, HEADLIGHT_BEAM, left_beam_points)
+            pygame.draw.polygon(beam_surface, HEADLIGHT_BEAM, right_beam_points)
+            
+            screen.blit(beam_surface, (0, 0))
         
     def update_direction(self):
         now = pygame.time.get_ticks()
-        if now - self.last_direction_change > 300:
+        if now - self.last_direction_change > 300:  # Blink every 300ms
             self.draw_car()
             if self.direction != 0:
-                if self.direction == -1:
+                # Add turn signals
+                if self.direction == -1:  # Left turn
                     for i in range(5):
                         gfxdraw.pixel(self.image, 3, 10+i, ORANGE)
                         gfxdraw.pixel(self.image, 4, 10+i, ORANGE)
-                else:
+                else:  # Right turn
                     for i in range(5):
                         gfxdraw.pixel(self.image, self.size-4, 10+i, ORANGE)
                         gfxdraw.pixel(self.image, self.size-5, 10+i, ORANGE)
                 
+                # Add shadow on opposite side
                 shadow_offset = 3
                 shadow_surface = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
-                if self.direction == -1:
+                if self.direction == -1:  # Shadow on right
                     shadow_surface.blit(self.base_image, (shadow_offset, 0))
-                else:
+                else:  # Shadow on left
                     shadow_surface.blit(self.base_image, (-shadow_offset, 0))
                 shadow_surface.fill((0, 0, 0, 50), special_flags=pygame.BLEND_RGBA_MULT)
                 self.image.blit(shadow_surface, (0, 0))
@@ -108,6 +144,7 @@ class Car(pygame.sprite.Sprite):
         keys = pygame.key.get_pressed()
         self.direction = 0
         
+        # Horizontal movement (A/D keys)
         if keys[pygame.K_a] and self.rect.left > 100:
             self.rect.x -= self.settings.car_speed
             self.direction = -1
@@ -115,14 +152,16 @@ class Car(pygame.sprite.Sprite):
             self.rect.x += self.settings.car_speed
             self.direction = 1
             
+        # Vertical movement (W/S keys)
         if keys[pygame.K_w] and self.rect.top > HEIGHT // 3:
             self.rect.y -= self.settings.car_speed
         if keys[pygame.K_s] and self.rect.bottom < HEIGHT:
             self.rect.y += self.settings.car_speed
             
         self.update_direction()
+        self.draw_headlight_beams()
 
-# Blonde
+# Blonde (enemy)
 class Blonde(pygame.sprite.Sprite):
     def __init__(self, settings, occupied_lanes):
         super().__init__()
@@ -156,7 +195,7 @@ class Blonde(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT:
             self.kill()
 
-# Button
+# Button class remains the same as before
 class Button:
     def __init__(self, x, y, width, height, text):
         self.rect = pygame.Rect(x, y, width, height)
@@ -176,7 +215,7 @@ class Button:
         self.is_hovered = self.rect.collidepoint(pos)
         return self.is_hovered
 
-# Road functions
+# Draw road with markings
 def draw_road(settings):
     pygame.draw.rect(screen, SKY_BLUE, (0, 0, WIDTH, HEIGHT // 3))
     pygame.draw.rect(screen, GREEN, (0, HEIGHT // 3, 100, HEIGHT))
@@ -185,7 +224,7 @@ def draw_road(settings):
     for y in range(HEIGHT // 3, HEIGHT, 40):
         pygame.draw.rect(screen, YELLOW, (WIDTH // 2 - 5, y, 10, 20))
 
-# Main game
+# Main game loop
 def main_game():
     settings = GameSettings()
     all_sprites = pygame.sprite.Group()
@@ -206,9 +245,12 @@ def main_game():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_h:  # Toggle headlights with H key
+                    car.headlights_on = not car.headlights_on
 
         if settings.check_phase_change():
-            print(f"NEW PHASE {settings.phase}")
+            print(f"Phase {settings.phase} started")
         
         if len(blondes) < settings.blonde_count:
             occupied_lanes = [blonde.rect.centerx for blonde in blondes]
@@ -225,24 +267,29 @@ def main_game():
 
         screen.fill(BLACK)
         draw_road(settings)
+        car.draw_headlight_beams()  # Draw headlight beams under everything
         all_sprites.draw(screen)
         
-        score_text = font_medium.render(f"SCORE: {score}", True, WHITE)
+        # UI elements
+        score_text = font_medium.render(f"Score: {score}", True, WHITE)
         screen.blit(score_text, (10, 10))
         
-        time_text = font_small.render(f"TIME: {elapsed_time} сек", True, WHITE)
+        time_text = font_small.render(f"Time: {elapsed_time}s", True, WHITE)
         screen.blit(time_text, (10, 50))
         
-        phase_text = font_small.render(f"PHASE: {settings.phase}", True, WHITE)
+        phase_text = font_small.render(f"Phase: {settings.phase}", True, WHITE)
         screen.blit(phase_text, (10, 80))
+        
+        controls_text = font_small.render("Controls: A/D - Left/Right, W/S - Up/Down, H - Headlights", True, WHITE)
+        screen.blit(controls_text, (WIDTH//2 - controls_text.get_width()//2, HEIGHT - 30))
 
         pygame.display.flip()
         clock.tick(60)
 
-# Menu
+# Menu screen
 def show_menu():
-    start_button = Button(WIDTH//2 - 100, HEIGHT//2 - 30, 200, 60, "START")
-    exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 50, 200, 60, "EXIT")
+    start_button = Button(WIDTH//2 - 100, HEIGHT//2 - 30, 200, 60, "Start")
+    exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 50, 200, 60, "Exit")
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
@@ -261,7 +308,7 @@ def show_menu():
 
         screen.fill(SKY_BLUE)
         
-        title = font_large.render("CAR VS DANJA", True, WHITE)
+        title = font_large.render("Car vs Blondes", True, WHITE)
         screen.blit(title, (WIDTH//2 - title.get_width()//2, 100))
         
         start_button.check_hover(mouse_pos)
@@ -271,10 +318,10 @@ def show_menu():
 
         pygame.display.flip()
 
-# Game end screen
+# Game over screen
 def show_game_over(score):
-    restart_button = Button(WIDTH//2 - 100, HEIGHT//2, 200, 60, "PLAY AGAIN")
-    exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 80, 200, 60, "EXIT")
+    restart_button = Button(WIDTH//2 - 100, HEIGHT//2, 200, 60, "Play Again")
+    exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 80, 200, 60, "Exit")
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
@@ -293,10 +340,10 @@ def show_game_over(score):
 
         screen.fill(SKY_BLUE)
         
-        game_over = font_large.render("U SUCK!", True, WHITE)
+        game_over = font_large.render("Game Over!", True, WHITE)
         screen.blit(game_over, (WIDTH//2 - game_over.get_width()//2, 100))
         
-        score_text = font_medium.render(f"SCORE: {score}", True, WHITE)
+        score_text = font_medium.render(f"Your Score: {score}", True, WHITE)
         screen.blit(score_text, (WIDTH//2 - score_text.get_width()//2, 180))
         
         restart_button.check_hover(mouse_pos)
@@ -306,7 +353,7 @@ def show_game_over(score):
 
         pygame.display.flip()
 
-# Main game cycle
+# Main program loop
 def main():
     while True:
         score = show_menu()
