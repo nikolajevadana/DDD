@@ -2,15 +2,15 @@ import pygame
 import random
 import sys
 
-# Pygame Inizialization
+# Инициализация Pygame
 pygame.init()
 
-# Screen setup
+# Настройки экрана
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("CAR VS DANJAS")
 
-# Colours
+# Цвета
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLONDE_YELLOW = (255, 255, 153)  # Светло-жёлтый (блондинка)
@@ -21,34 +21,55 @@ SKY_BLUE = (25, 25, 112)         # Тёмно-синий (небо)
 ROAD_GRAY = (50, 50, 50)         # Серый (дорога)
 BUTTON_COLOR = (100, 100, 255)   # Цвет кнопок
 
-# Shrifts
+# Шрифты
 font_large = pygame.font.SysFont('Arial', 50)
 font_medium = pygame.font.SysFont('Arial', 36)
 font_small = pygame.font.SysFont('Arial', 24)
 
-# PLayer
-class Car(pygame.sprite.Sprite):
+# Параметры игры
+class GameSettings:
     def __init__(self):
+        self.phase = 1
+        self.phase_length = 2000  # Очков до следующей фазы
+        self.car_speed = 7
+        self.blonde_speed_min = 2
+        self.blonde_speed_max = 5
+        self.blonde_count = 8
+        self.spawn_safe_zone = 150  # Зона безопасности вокруг машины
+        
+    def next_phase(self):
+        self.phase += 1
+        self.car_speed *= 1.05
+        self.blonde_speed_min *= 1.05
+        self.blonde_speed_max *= 1.05
+        self.blonde_count = min(20, int(self.blonde_count * 1.05))
+        self.spawn_safe_zone = max(50, self.spawn_safe_zone * 0.95)
+
+# Машина (игрок)
+class Car(pygame.sprite.Sprite):
+    def __init__(self, settings):
         super().__init__()
+        self.settings = settings
         self.image = pygame.Surface((60, 100))
         self.image.fill(EGGPLANT)
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH // 2, HEIGHT - 100)
-        self.speed = 7
-
+        
     def update(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a] and self.rect.left > 100:
-            self.rect.x -= self.speed
+            self.rect.x -= self.settings.car_speed
         if keys[pygame.K_d] and self.rect.right < WIDTH - 100:
-            self.rect.x += self.speed
+            self.rect.x += self.settings.car_speed
 
-# Danaja
+# Блондинка (враг)
 class Blonde(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, settings, car_pos=None):
         super().__init__()
+        self.settings = settings
         self.image = pygame.Surface((50, 50), pygame.SRCALPHA)
         pygame.draw.circle(self.image, BLONDE_YELLOW, (25, 25), 25)
+        # Рисуем лицо (глаза, нос, рот)
         pygame.draw.rect(self.image, BLACK, (15, 15, 5, 5))
         pygame.draw.rect(self.image, BLACK, (30, 15, 5, 5))
         pygame.draw.rect(self.image, BLACK, (22, 22, 6, 6))
@@ -56,23 +77,30 @@ class Blonde(pygame.sprite.Sprite):
             pygame.draw.rect(self.image, BLACK, (x, y, 3, 3))
         
         self.rect = self.image.get_rect()
-        self.rect.x = random.randint(100, WIDTH - 150)
-        self.rect.y = random.randint(-200, -100)
-        self.speed = random.randint(2, 5)
+        self.speed = random.uniform(self.settings.blonde_speed_min, self.settings.blonde_speed_max)
+        
+        # Умный спавн с безопасной зоной
+        if car_pos:
+            while True:
+                self.rect.x = random.randint(100, WIDTH - 150)
+                # Проверяем, что блондинка не появляется прямо над машиной
+                if abs(self.rect.centerx - car_pos) > self.settings.spawn_safe_zone:
+                    break
+        else:
+            self.rect.x = random.randint(100, WIDTH - 150)
+            
+        self.rect.y = random.randint(-300, -100)
 
     def update(self):
         self.rect.y += self.speed
         if self.rect.top > HEIGHT:
-            self.rect.x = random.randint(100, WIDTH - 150)
-            self.rect.y = random.randint(-200, -100)
-            self.speed = random.randint(2, 5)
+            self.kill()
 
-# Button
+# Кнопка
 class Button:
-    def __init__(self, x, y, width, height, text, action=None):
+    def __init__(self, x, y, width, height, text):
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
-        self.action = action
         self.is_hovered = False
 
     def draw(self, surface):
@@ -88,13 +116,8 @@ class Button:
         self.is_hovered = self.rect.collidepoint(pos)
         return self.is_hovered
 
-    def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.is_hovered:
-            if self.action:
-                self.action()
-
-# Functions for road
-def draw_road():
+# Функция для рисования дороги
+def draw_road(settings):
     pygame.draw.rect(screen, SKY_BLUE, (0, 0, WIDTH, HEIGHT // 3))
     pygame.draw.rect(screen, GREEN, (0, HEIGHT // 3, 100, HEIGHT))
     pygame.draw.rect(screen, GREEN, (WIDTH - 100, HEIGHT // 3, 100, HEIGHT))
@@ -102,49 +125,63 @@ def draw_road():
     for y in range(HEIGHT // 3, HEIGHT, 40):
         pygame.draw.rect(screen, YELLOW, (WIDTH // 2 - 5, y, 10, 20))
 
-# Main game
+# Основная игра
 def main_game():
+    settings = GameSettings()
     all_sprites = pygame.sprite.Group()
     blondes = pygame.sprite.Group()
-    car = Car()
+    car = Car(settings)
     all_sprites.add(car)
-
-    for _ in range(8):
-        blonde = Blonde()
-        all_sprites.add(blonde)
-        blondes.add(blonde)
 
     score = 0
     clock = pygame.time.Clock()
     running = True
 
     while running:
+        # Обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
+        # Проверка перехода на новую фазу
+        if score // settings.phase_length > settings.phase - 1:
+            settings.next_phase()
+        
+        # Спавн новых блондинок
+        while len(blondes) < settings.blonde_count:
+            new_blonde = Blonde(settings, car.rect.centerx)
+            all_sprites.add(new_blonde)
+            blondes.add(new_blonde)
+
+        # Обновление
         all_sprites.update()
 
+        # Проверка столкновений
         if pygame.sprite.spritecollide(car, blondes, False):
-            return score  # Возвращаем счет при завершении игры
+            return score
 
         score += 1
 
+        # Отрисовка
         screen.fill(BLACK)
-        draw_road()
+        draw_road(settings)
         all_sprites.draw(screen)
         
+        # Интерфейс
         score_text = font_medium.render(f"SCORE: {score}", True, WHITE)
         screen.blit(score_text, (10, 10))
+        
+        phase_text = font_small.render(f"PHASE: {settings.phase}", True, WHITE)
+        screen.blit(phase_text, (10, 50))
 
         pygame.display.flip()
         clock.tick(60)
 
-# Menu screen
+# Меню
 def show_menu():
-    start_button = Button(WIDTH//2 - 100, HEIGHT//2 - 30, 200, 60, "Начать", lambda: None)
-    exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 50, 200, 60, "Выход", lambda: None)
+    start_button = Button(WIDTH//2 - 100, HEIGHT//2 - 30, 200, 60, "START")
+    exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 50, 200, 60, "EXIT")
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
@@ -153,9 +190,6 @@ def show_menu():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            
-            start_button.handle_event(event)
-            exit_button.handle_event(event)
             
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if start_button.rect.collidepoint(event.pos):
@@ -167,7 +201,7 @@ def show_menu():
         screen.fill(SKY_BLUE)
         
         # Заголовок
-        title = font_large.render("CARS VS DANAJA", True, WHITE)
+        title = font_large.render("CARS VS DANJAS", True, WHITE)
         screen.blit(title, (WIDTH//2 - title.get_width()//2, 100))
         
         # Кнопки
@@ -178,10 +212,10 @@ def show_menu():
 
         pygame.display.flip()
 
-# Ending game screen
+# Экран завершения игры
 def show_game_over(score):
-    restart_button = Button(WIDTH//2 - 100, HEIGHT//2, 200, 60, "Играть снова", lambda: None)
-    exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 80, 200, 60, "Выход", lambda: None)
+    restart_button = Button(WIDTH//2 - 100, HEIGHT//2, 200, 60, "PLAY AGAIN")
+    exit_button = Button(WIDTH//2 - 100, HEIGHT//2 + 80, 200, 60, "EXIT")
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
@@ -190,9 +224,6 @@ def show_game_over(score):
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            
-            restart_button.handle_event(event)
-            exit_button.handle_event(event)
             
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if restart_button.rect.collidepoint(event.pos):
@@ -203,15 +234,15 @@ def show_game_over(score):
 
         screen.fill(SKY_BLUE)
         
-        # Text "Game over"
+        # Текст "Игра окончена"
         game_over = font_large.render("U SUCK!", True, WHITE)
         screen.blit(game_over, (WIDTH//2 - game_over.get_width()//2, 100))
         
-        # Score
-        score_text = font_medium.render(f"YOUR SCORE: {score}", True, WHITE)
+        # Счет
+        score_text = font_medium.render(f"SCORE: {score}", True, WHITE)
         screen.blit(score_text, (WIDTH//2 - score_text.get_width()//2, 180))
         
-        # Buttons
+        # Кнопки
         restart_button.check_hover(mouse_pos)
         exit_button.check_hover(mouse_pos)
         restart_button.draw(screen)
@@ -219,12 +250,13 @@ def show_game_over(score):
 
         pygame.display.flip()
 
-# Main program cycle
+# Главный цикл программы
 def main():
     while True:
-        score = show_menu()  # Показываем меню
-        if show_game_over(score):  # Показываем экран завершения
-            continue  # Если выбрали "Играть снова", продолжаем цикл
+        score = show_menu()
+        if show_game_over(score):
+            continue
 
 if __name__ == "__main__":
     main()
+
