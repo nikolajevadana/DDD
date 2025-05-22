@@ -1,4 +1,4 @@
-# DDD
+# TRY TO SURVIVE
 # 🚗 Car vs Blondes
 
 A fun and chaotic arcade-style driving game where you dodge waves of falling blonde "Danjas" while driving your little eggplant-colored car! The longer you last, the harder the game becomes!
